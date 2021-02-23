@@ -64,7 +64,7 @@ void loop() {
   unsigned long chatteringDecayTime = 15;//チャタリング考慮時間(ms) 押した瞬間からこの時間が経つまでは押しているとみなす
   
   while (1) {
-    RGBLED.setBrightness(20) ;
+    RGBLED.setBrightness(30) ;
     for (i = 0; i < 4; i++) {
       if (Lighttime[i] == 0 && LN[i] == 0) {//もう光らせる必要が無いとき
         LEDvalue[i] = (int)((float)LEDvalue[i]/1.15);
@@ -82,10 +82,10 @@ void loop() {
     while (Serial.available() > 0) {
       a = Serial.read();//シリアル通信で来たデータを読み込む
       if (a != -1) {
-        if (a == '0')lane = 3;
-        if (a == '1')lane = 2;
-        if (a == '2')lane = 1;
-        if (a == '3')lane = 0;
+        if (a == '0')lane = 0;
+        if (a == '1')lane = 1;
+        if (a == '2')lane = 2;
+        if (a == '3')lane = 3;
 
 
         data[0] = Serial.read();
