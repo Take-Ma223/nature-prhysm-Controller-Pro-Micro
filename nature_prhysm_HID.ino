@@ -40,25 +40,39 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly
   int i = 0;
-  int R[4] = {0, 0, 0, 0};
+  int R[4] = {0, 0, 0, 0};//LED輝度
   int G[4] = {0, 0, 0, 0};
   int B[4] = {0, 0, 0, 0};
+  unsigned long PressedTimeR[4] = {0, 0, 0, 0};//押した瞬間の時間(ミリ秒)
+  unsigned long PressedTimeG[4] = {0, 0, 0, 0};
+  unsigned long PressedTimeB[4] = {0, 0, 0, 0};
+
+
+  
   int data[2] = {0, 0};
   char a = 0;
   int lane = 0;
   int LN[4] = {0, 0, 0, 0}; //オートプレイのときLN中かどうか
   int Lighttime[4] = {0, 0, 0, 0}; //オートプレイでLEDを光らせる時間
 
+  char key[12]={'v','b','n','m','f','g','h','j','r','t','y','u',};
+  int keyState;
+  int keyStatePrevious[12];//前フレームのボタンの押下情報
+  int LEDvalue[12];//LED輝度
+  unsigned long KeyPressedTime[12]={0,0,0,0,0,0,0,0,0,0,0,0};//押した瞬間の時間(ms)
+  int pinNumber[12]={R1,R2,R3,R4,G1,G2,G3,G4,B1,B2,B3,B4};
+  unsigned long chatteringDecayTime = 15;//チャタリング考慮時間(ms) 押した瞬間からこの時間が経つまでは押しているとみなす
+  
   while (1) {
     RGBLED.setBrightness(20) ;
-    for (i = 0; i <= 3; i++) {
+    for (i = 0; i < 4; i++) {
       if (Lighttime[i] == 0 && LN[i] == 0) {//もう光らせる必要が無いとき
-        R[i] = (int)((float)R[i]/1.15);
-        G[i] = (int)((float)G[i]/1.15);
-        B[i] = (int)((float)B[i]/1.15);
-        if(R[i]<0)R[i]=0;
-        if(G[i]<0)G[i]=0;
-        if(B[i]<0)B[i]=0;
+        LEDvalue[i] = (int)((float)LEDvalue[i]/1.15);
+        LEDvalue[i+4] = (int)((float)LEDvalue[i+4]/1.15);
+        LEDvalue[i+8] = (int)((float)LEDvalue[i+8]/1.15);
+        if(LEDvalue[i]<0)LEDvalue[i]=0;
+        if(LEDvalue[i+4]<0)LEDvalue[i+4]=0;
+        if(LEDvalue[i+8]<0)LEDvalue[i+8]=0;
         
       } else {
         if (Lighttime[i] >= 1)Lighttime[i] -= 1;
@@ -88,133 +102,64 @@ void loop() {
         }
 
         if (data[0] == 'R') {
-          R[lane] = 255;
+          LEDvalue[lane] = 255;
         }
         if (data[0] == 'G') {
-          G[lane] = 255;
+          LEDvalue[4+lane] = 255;
         }
         if (data[0] == 'B') {
-          B[lane] = 255;
+          LEDvalue[8+lane] = 255;
         }
         if (data[0] == 'Y') {
-          R[lane] = 255;
-          G[lane] = 255;
+          LEDvalue[lane] = 255;
+          LEDvalue[4+lane] = 255;
         }
         if (data[0] == 'C') {
-          G[lane] = 255;
-          B[lane] = 255;
+          LEDvalue[4+lane] = 255;
+          LEDvalue[8+lane] = 255;
         }
         if (data[0] == 'M') {
-          R[lane] = 255;
-          B[lane] = 255;
+          LEDvalue[lane] = 255;
+          LEDvalue[8+lane] = 255;
         }
         if (data[0] == 'W') {
-          R[lane] = 255;
-          G[lane] = 255;
-          B[lane] = 255;
+          LEDvalue[lane] = 255;
+          LEDvalue[4+lane] = 255;
+          LEDvalue[8+lane] = 255;
         }
         if (data[0] == 'F') {
-          R[lane] = random(100, 255) ;
-          G[lane] = random(100, 255) ;
-          B[lane] = random(100, 255) ;
+          LEDvalue[lane] = random(100, 255) ;
+          LEDvalue[4+lane] = random(100, 255) ;
+          LEDvalue[8+lane] = random(100, 255) ;
         }
 
       }
     }
 
-    if (digitalRead(R1) == 0) {
-      //Serial.println(1);
-      R[3] = 255;
-      NKROKeyboard.add('v');
-    } else {
-      NKROKeyboard.remove('v');
-    }
-    if (digitalRead(R2) == 0) {
-      //Serial.println(2);
-      R[2] = 255;
-      NKROKeyboard.add('b');
-    } else {
-      NKROKeyboard.remove('b');
-    }
-    if (digitalRead(R3) == 0) {
-      //Serial.println(3);
-      R[1] = 255;
-      NKROKeyboard.add('n');
-    } else {
-      NKROKeyboard.remove('n');
-    }
-    if (digitalRead(R4) == 0) {
-      //Serial.println(4);
-      R[0] = 255;
-      NKROKeyboard.add('m');
-    } else {
-      NKROKeyboard.remove('m');
-    }
-    if (digitalRead(G1) == 0) {
-      //Serial.println(5);
-      G[3] = 255;
-      NKROKeyboard.add('f');
-    } else {
-      NKROKeyboard.remove('f');
-    }
-    if (digitalRead(G2) == 0) {
-      //Serial.println(6);
-      G[2] = 255;
-      NKROKeyboard.add('g');
-    } else {
-      NKROKeyboard.remove('g');
-    }
-    if (digitalRead(G3) == 0) {
-      //Serial.println(7);
-      G[1] = 255;
-      NKROKeyboard.add('h');
-    } else {
-      NKROKeyboard.remove('h');
-    }
-    if (digitalRead(G4) == 0) {
-      //Serial.println(8);
-      G[0] = 255;
-      NKROKeyboard.add('j');
-    } else {
-      NKROKeyboard.remove('j');
-    }
-    if (digitalRead(B1) == 0) {
-      //Serial.println(9);
-      B[3] = 255;
-      NKROKeyboard.add('r');
-    } else {
-      NKROKeyboard.remove('r');
-    }
-    if (digitalRead(B2) == 0) {
-      //Serial.println(10);
-      B[2] = 255;
-      NKROKeyboard.add('t');
-    } else {
-      NKROKeyboard.remove('t');
-    }
-    if (digitalRead(B3) == 0) {
-      //Serial.println(11);
-      B[1] = 255;
-      NKROKeyboard.add('y');
-    } else {
-      NKROKeyboard.remove('y');
-    }
-    if (digitalRead(B4) == 0) {
-      //Serial.println(12);
-      B[0] = 255;
-      NKROKeyboard.add('u');
-    } else {
-      NKROKeyboard.remove('u');
+    for(i=0;i<12;i++){
+      keyState = digitalRead(pinNumber[i]);
+
+      if (keyState == 0) {//ON
+        //Serial.println(1);
+        LEDvalue[i] = 255;
+        KeyPressedTime[i]=millis();
+        NKROKeyboard.add(key[i]);
+      } else {//OFF
+        if((millis()-KeyPressedTime[i])>=chatteringDecayTime){//チャタリング防止処理
+          NKROKeyboard.remove(key[i]);
+        }
+      }
+      keyStatePrevious[i] = keyState;//次のフレームでチャタリング防止処理に使うためキー押下状態保存
     }
 
     NKROKeyboard.send();
 
-    RGBLED.setPixelColor(0, R[0], G[0], B[0]) ;
-    RGBLED.setPixelColor(1, R[1], G[1], B[1]) ;
-    RGBLED.setPixelColor(2, R[2], G[2], B[2]) ;
-    RGBLED.setPixelColor(3, R[3], G[3], B[3]) ;
+    RGBLED.setPixelColor(3, LEDvalue[0], LEDvalue[4], LEDvalue[8]) ;
+    RGBLED.setPixelColor(2, LEDvalue[1], LEDvalue[5], LEDvalue[9]) ;
+    RGBLED.setPixelColor(1, LEDvalue[2], LEDvalue[6], LEDvalue[10]) ;
+    RGBLED.setPixelColor(0, LEDvalue[3], LEDvalue[7], LEDvalue[11]) ;
 
     RGBLED.show() ;
-    delay(8);
+    //delay(8);
   }
 }
