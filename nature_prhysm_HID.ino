@@ -2,6 +2,7 @@
 #include <HID-Settings.h>
 
 #include <Adafruit_NeoPixel.h>
+#include "KickSort.h"
 
 #define R1 15
 #define R2 14
@@ -16,7 +17,12 @@
 #define B3 4
 #define B4 5
 #define LED A1
+#define VOLUME A0
+
+#define VOLUME_INPUT 16
 Adafruit_NeoPixel RGBLED = Adafruit_NeoPixel(4, LED, NEO_RGB + NEO_KHZ800);
+
+int volumeInput[VOLUME_INPUT];//ボリュームの値のバッファ、中央値を利用してノイズ緩和に使う
 
 void setup() {
   // put your setup code here, to run once:
@@ -34,7 +40,12 @@ void setup() {
   pinMode(B3, INPUT_PULLUP);
   pinMode(B4, INPUT_PULLUP);
   pinMode(LED, OUTPUT);
+  pinMode(VOLUME, INPUT);
   RGBLED.begin();// RGBLEDのライブラリを初期化する
+
+  for(int i=0;i<VOLUME_INPUT;i++){
+    volumeInput[i]=0;
+  }
 }
 
 void loop() {
@@ -62,14 +73,23 @@ void loop() {
   unsigned long KeyPressedTime[12]={0,0,0,0,0,0,0,0,0,0,0,0};//押した瞬間の時間(ms)
   int pinNumber[12]={R1,R2,R3,R4,G1,G2,G3,G4,B1,B2,B3,B4};
   unsigned long chatteringDecayTime = 15;//チャタリング考慮時間(ms) 押した瞬間からこの時間が経つまでは押しているとみなす
+
+  float attenuationRate = 1.015;
+  int volume = 0;
+  unsigned char writeVal = 0;
+  
+  
+  int volumeInputIndex = 0;
   
   while (1) {
-    RGBLED.setBrightness(30) ;
+  //小さいLEDでは30が良い
+  //デカいLEDでは60が良い
+    RGBLED.setBrightness(60) ;
     for (i = 0; i < 4; i++) {
       if (Lighttime[i] == 0 && LN[i] == 0) {//もう光らせる必要が無いとき
-        LEDvalue[i] = (int)((float)LEDvalue[i]/1.15);
-        LEDvalue[i+4] = (int)((float)LEDvalue[i+4]/1.15);
-        LEDvalue[i+8] = (int)((float)LEDvalue[i+8]/1.15);
+        LEDvalue[i] = (int)((float)LEDvalue[i]/attenuationRate);
+        LEDvalue[i+4] = (int)((float)LEDvalue[i+4]/attenuationRate);
+        LEDvalue[i+8] = (int)((float)LEDvalue[i+8]/attenuationRate);
         if(LEDvalue[i]<0)LEDvalue[i]=0;
         if(LEDvalue[i+4]<0)LEDvalue[i+4]=0;
         if(LEDvalue[i+8]<0)LEDvalue[i+8]=0;
@@ -79,6 +99,23 @@ void loop() {
       }
     }
 
+    //シリアルデータ送信
+    if(Serial.availableForWrite()>0){
+      volumeInput[volumeInputIndex] = analogRead(VOLUME);//0~1023
+      volumeInputIndex++;
+      if(volumeInputIndex==VOLUME_INPUT)volumeInputIndex=0;
+      
+      KickSort<uint16_t>::quickSort(volumeInput, VOLUME_INPUT, KickSort_Dir::DESCENDING);
+
+      int newVolumeVal = volumeInput[VOLUME_INPUT/2];//0~1023
+      if(abs(newVolumeVal - volume) >= 4){
+        volume = newVolumeVal;
+
+        writeVal = (unsigned char)(volume/4);//0~255
+        Serial.write(writeVal);
+      }
+    }
+    
     while (Serial.available() > 0) {
       a = Serial.read();//シリアル通信で来たデータを読み込む
       if (a != -1) {
@@ -90,7 +127,7 @@ void loop() {
 
         data[0] = Serial.read();
         data[1] = Serial.read();
-        Serial.println(data[0]);
+        //Serial.println(data[0]);
         if (data[1] == '0') {
           Lighttime[lane] = 1;
         }
