@@ -80,6 +80,10 @@ void loop() {
   
   
   int volumeInputIndex = 0;
+  unsigned long elapsedTime = 0;
+  unsigned long sendTimeinterval = 16;
+
+  elapsedTime = millis();
   
   while (1) {
   //小さいLEDでは30が良い
@@ -112,9 +116,17 @@ void loop() {
         volume = newVolumeVal;
 
         writeVal = (unsigned char)(volume/4);//0~255
+        
+      }
+      //sendTimeinterval時間間隔毎にデータ送信
+      if(millis() - elapsedTime >= sendTimeinterval){
+        elapsedTime = millis();
         Serial.write(writeVal);
       }
     }
+
+    
+    
     
     while (Serial.available() > 0) {
       a = Serial.read();//シリアル通信で来たデータを読み込む
