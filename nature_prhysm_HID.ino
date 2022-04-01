@@ -126,7 +126,6 @@ void loop() {
       if(a == 'L'){
         //ボリューム値送信リクエスト受信
         Serial.write(writeVal);
-        LEDvalue[2] = 255;
         continue;
       }
       
