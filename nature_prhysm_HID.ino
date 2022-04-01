@@ -26,7 +26,8 @@ int volumeInput[VOLUME_INPUT];//ボリュームの値のバッファ、中央値
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(300);
+  Serial.begin(9600);
+  Serial.setTimeout(1000);
   pinMode(R1, INPUT_PULLUP);
   pinMode(R2, INPUT_PULLUP);
   pinMode(R3, INPUT_PULLUP);
@@ -80,10 +81,6 @@ void loop() {
   
   
   int volumeInputIndex = 0;
-  unsigned long elapsedTime = 0;
-  unsigned long sendTimeinterval = 16;
-
-  elapsedTime = millis();
   
   while (1) {
   //小さいLEDでは30が良い
@@ -116,11 +113,6 @@ void loop() {
         volume = newVolumeVal;
 
         writeVal = (unsigned char)(volume/4);//0~255
-        
-      }
-      //sendTimeinterval時間間隔毎にデータ送信
-      if(millis() - elapsedTime >= sendTimeinterval){
-        elapsedTime = millis();
         Serial.write(writeVal);
       }
     }
@@ -130,6 +122,14 @@ void loop() {
     
     while (Serial.available() > 0) {
       a = Serial.read();//シリアル通信で来たデータを読み込む
+
+      if(a == 'L'){
+        //ボリューム値送信リクエスト受信
+        Serial.write(writeVal);
+        LEDvalue[2] = 255;
+        continue;
+      }
+      
       if (a != -1) {
         if (a == '0')lane = 0;
         if (a == '1')lane = 1;
