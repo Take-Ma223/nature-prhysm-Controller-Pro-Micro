@@ -27,7 +27,7 @@ int volumeInput[VOLUME_INPUT];//ボリュームの値のバッファ、中央値
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  Serial.setTimeout(1000);
+  Serial.setTimeout(1);
   pinMode(R1, INPUT_PULLUP);
   pinMode(R2, INPUT_PULLUP);
   pinMode(R3, INPUT_PULLUP);
@@ -115,6 +115,7 @@ void loop() {
         writeVal = (unsigned char)(volume/4);//0~255
         Serial.write(writeVal);
       }
+      Serial.flush();
     }
 
     
@@ -125,7 +126,10 @@ void loop() {
 
       if(a == 'L'){
         //ボリューム値送信リクエスト受信
-        Serial.write(writeVal);
+        if(Serial.availableForWrite()>0){
+          Serial.write(writeVal);
+          Serial.flush();
+        }
         continue;
       }
       
