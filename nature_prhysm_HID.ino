@@ -22,12 +22,14 @@
 #define VOLUME_INPUT 16
 Adafruit_NeoPixel RGBLED = Adafruit_NeoPixel(4, LED, NEO_RGB + NEO_KHZ800);
 
+#define LED_BRIGHTNESS 60
+
 int volumeInput[VOLUME_INPUT];//ボリュームの値のバッファ、中央値を利用してノイズ緩和に使う
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  Serial.setTimeout(1);
+  Serial.begin(300);
+  Serial.setTimeout(1000);
   pinMode(R1, INPUT_PULLUP);
   pinMode(R2, INPUT_PULLUP);
   pinMode(R3, INPUT_PULLUP);
@@ -78,14 +80,16 @@ void loop() {
   float attenuationRate = 1.015;
   int volume = 0;
   unsigned char writeVal = 0;
-  
+
+  //ボリュームが無いコントローラはシリアル送信機能をオフにしてください
+  int isSerialSendAvailable = true;
   
   int volumeInputIndex = 0;
   
   while (1) {
   //小さいLEDでは30が良い
   //デカいLEDでは60が良い
-    RGBLED.setBrightness(60) ;
+    RGBLED.setBrightness(LED_BRIGHTNESS);
     for (i = 0; i < 4; i++) {
       if (Lighttime[i] == 0 && LN[i] == 0) {//もう光らせる必要が無いとき
         LEDvalue[i] = (int)((float)LEDvalue[i]/attenuationRate);
@@ -101,7 +105,7 @@ void loop() {
     }
 
     //シリアルデータ送信
-    if(Serial.availableForWrite()>0){
+    if(Serial.availableForWrite()>0 && isSerialSendAvailable){
       volumeInput[volumeInputIndex] = analogRead(VOLUME);//0~1023
       volumeInputIndex++;
       if(volumeInputIndex==VOLUME_INPUT)volumeInputIndex=0;
@@ -132,6 +136,19 @@ void loop() {
         }
         continue;
       }
+
+      if(a == 'B'){
+        //1拍毎発光リクエスト受信
+        for(int i = 0;i<4;i++){
+          int bright=100;
+          if(LN[i] == 0){
+            LEDvalue[i] = bright;
+            LEDvalue[4+i] = bright;
+            LEDvalue[8+i] = bright;
+          }
+        }
+        continue;
+      }
       
       if (a != -1) {
         if (a == '0')lane = 0;
@@ -155,34 +172,43 @@ void loop() {
 
         if (data[0] == 'R') {
           LEDvalue[lane] = 255;
+          LEDvalue[4 + lane] = 0;
+          LEDvalue[8 + lane] = 0;
         }
         if (data[0] == 'G') {
-          LEDvalue[4+lane] = 255;
+          LEDvalue[lane] = 0;
+          LEDvalue[4 + lane] = 255;
+          LEDvalue[8 + lane] = 0;
         }
         if (data[0] == 'B') {
-          LEDvalue[8+lane] = 255;
+          LEDvalue[lane] = 0;
+          LEDvalue[4 + lane] = 0;
+          LEDvalue[8 + lane] = 255;
         }
         if (data[0] == 'Y') {
           LEDvalue[lane] = 255;
-          LEDvalue[4+lane] = 255;
+          LEDvalue[4 + lane] = 255;
+          LEDvalue[8 + lane] = 0;
         }
         if (data[0] == 'C') {
-          LEDvalue[4+lane] = 255;
-          LEDvalue[8+lane] = 255;
+          LEDvalue[lane] = 0;
+          LEDvalue[4 + lane] = 255;
+          LEDvalue[8 + lane] = 255;
         }
         if (data[0] == 'M') {
           LEDvalue[lane] = 255;
-          LEDvalue[8+lane] = 255;
+          LEDvalue[4 + lane] = 0;
+          LEDvalue[8 + lane] = 255;
         }
         if (data[0] == 'W') {
           LEDvalue[lane] = 255;
-          LEDvalue[4+lane] = 255;
-          LEDvalue[8+lane] = 255;
+          LEDvalue[4 + lane] = 255;
+          LEDvalue[8 + lane] = 255;
         }
         if (data[0] == 'F') {
           LEDvalue[lane] = random(100, 255) ;
-          LEDvalue[4+lane] = random(100, 255) ;
-          LEDvalue[8+lane] = random(100, 255) ;
+          LEDvalue[4 + lane] = random(100, 255) ;
+          LEDvalue[8 + lane] = random(100, 255) ;
         }
 
       }
